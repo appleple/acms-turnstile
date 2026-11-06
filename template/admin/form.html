@@ -1,0 +1,21 @@
+<h2 class="acms-admin-admin-title2">Turnstile設定</h2>
+<table class="acms-admin-table-admin-edit">
+  <tr>
+    <th>
+      Turnstile連携<i
+        class="acms-admin-icon-tooltip js-acms-tooltip js-acms-tooltip-hover"
+        data-acms-tooltip="チェックをすると、送信時に Cloudflare Turnstile のトークンを検証し、検証できない送信を拒否します。"
+      ></i>
+    </th>
+    <td>
+      <div class="acms-admin-form-checkbox">
+        <input type="hidden" name="turnstile_enable" value="off">
+        <input type="checkbox" name="turnstile_enable" value="on"{turnstile_enable:checked#on} id="turnstile_enable">
+        <label for="turnstile_enable">
+          <i class="acms-admin-ico-checkbox"></i>有効
+        </label>
+      </div>
+      <input type="hidden" name="mail[]" value="turnstile_enable">
+    </td>
+  </tr>
+</table>

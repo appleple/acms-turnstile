@@ -1,0 +1,108 @@
+<header>
+  <div>
+    @include("/admin/topicpath.html")
+  </div>
+  <div>
+    <h1 class="acms-admin-admin-title js-dialog-title">
+      Turnstile
+    </h1>
+  </div>
+</header>
+
+<!-- BEGIN_MODULE Admin_Config -->
+<!-- BEGIN_IF [{notice_mess}/nem/] -->
+<p class="acms-admin-alert acms-admin-alert-info acms-admin-alert-icon">
+  <span class="acms-admin-alert-icon-before acms-admin-icon-news"></span>
+  Turnstile 設定を保存しました
+  <button class="js-acms-alert-close acms-admin-alert-icon-after acms-admin-margin-right-mini">×</button>
+</p><!-- END_IF -->
+
+<form action="" method="post" class="acms-admin-form">
+  <div class="js-acms_fix_marker acms_fix_bg">
+    <div class="acms_fix_bg_index">
+      <input
+        type="submit"
+        name="ACMS_POST_Config"
+        value="<!--T-->保存<!--/T-->"
+        class="acms-admin-btn-admin acms-admin-btn-admin-primary acms-admin-btn-admin-save js-saving-splash"/>
+    </div>
+  </div>
+
+  <h2 class="acms-admin-admin-title2">API設定</h2>
+  <table class="acms-admin-table-admin-edit">
+    <tr>
+      <th>サイトキー<i class="acms-admin-icon-tooltip js-acms-tooltip-hover" data-acms-tooltip="ウィジェットの表示に使います。ページの HTML に出力されます。"></i></th>
+      <td>
+        <input type="text" name="turnstile_sitekey" value="{turnstile_sitekey}" class="acms-admin-form-width-medium" autocomplete="off"/>
+        <input type="hidden" name="config[]" value="turnstile_sitekey"/>
+      </td>
+    </tr>
+    <tr>
+      <th>シークレットキー<i class="acms-admin-icon-tooltip js-acms-tooltip-hover" data-acms-tooltip="サーバーからトークンを検証するときに使います。ページには出力されません。"></i></th>
+      <td>
+        <!-- type="password" にするとブラウザやパスワード管理ツールがログインのパスワードを自動入力し、保存時に上書きされるため text にする -->
+        <input type="text" name="turnstile_secret_key" value="{turnstile_secret_key}" class="acms-admin-form-width-medium" autocomplete="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore/>
+        <input type="hidden" name="config[]" value="turnstile_secret_key"/>
+        <p class="acms-admin-text-muted">.env に <code>TURNSTILE_SECRET_KEY</code> を書いた場合は、そちらを優先します（ブログのコンフィグに秘密を残さずに済みます）。</p>
+      </td>
+    </tr>
+    <tr>
+      <th>許可するホスト名<i class="acms-admin-icon-tooltip js-acms-tooltip-hover" data-acms-tooltip="ウィジェットを表示したページのホスト名がこの中にあるときだけ送信を受け付けます。"></i></th>
+      <td>
+        <textarea name="turnstile_hostnames" class="acms-admin-form-width-medium" rows="3" placeholder="example.com">{turnstile_hostnames}</textarea>
+        <input type="hidden" name="config[]" value="turnstile_hostnames"/>
+        <p class="acms-admin-text-muted">1行に1つ書きます。空のときは、アクセスされたホスト名（%{HTTP_HOST}）だけを許可します。</p>
+      </td>
+    </tr>
+  </table>
+</form>
+<!-- END_MODULE Admin_Config -->
+
+<h2 class="acms-admin-admin-title2">設置方法</h2>
+<table class="acms-admin-table-admin-edit">
+  <tr>
+    <th>キーの取得</th>
+    <td>
+      <p>
+        Cloudflare のダッシュボードの「Turnstile」でウィジェットを追加し、ホスト名にサイトのドメインを登録します。
+        発行されたサイトキーとシークレットキーを上の API設定に保存してください。
+      </p>
+    </td>
+  </tr>
+  <tr>
+    <th>フォームの設定</th>
+    <td>
+      <p>管理ページ &gt; フォーム &gt; 対象のフォームID の「Turnstile設定」で <strong>Turnstile連携</strong> を有効にします。有効にしたフォームは、トークンを検証できない送信をすべて拒否します。</p>
+    </td>
+  </tr>
+  <tr>
+    <th>ウィジェットの設置</th>
+    <td>
+      <p>
+        送信ボタン（<code>ACMS_POST_Form_Submit</code>）のある form 要素の中に置きます。確認画面のあるフォームでは確認画面の form 要素に置きます。
+      </p>
+      <pre class="code HTML">
+&lt;form action="thanks.html" method="post" enctype="multipart/form-data"&gt;
+  ...
+  &lt;!-- BEGIN_MODULE Turnstile --&gt;
+  &lt;div class="js-acms-turnstile" data-sitekey="{sitekey}"&gt;&lt;/div&gt;
+  &lt;!-- END_MODULE Turnstile --&gt;
+  &lt;input type="submit" name="ACMS_POST_Form_Submit" value="送信する"/&gt;
+&lt;/form&gt;
+&lt;script src="%{ROOT_DIR}extension/plugins/Turnstile/assets/turnstile.js"&gt;&lt;/script&gt;
+&lt;script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&amp;onload=acmsTurnstileOnload" async defer&gt;&lt;/script&gt;
+      </pre>
+    </td>
+  </tr>
+  <tr>
+    <th>エラー表示</th>
+    <td>
+      <p>検証に失敗した送信は、Formモジュールの <strong>step#forbidden</strong> ブロックが表示されます。</p>
+      <pre class="code HTML">
+&lt;!-- BEGIN step#forbidden --&gt;
+  &lt;p&gt;送信できませんでした。お手数ですが、最初からやり直してください。&lt;/p&gt;
+&lt;!-- END step#forbidden --&gt;
+      </pre>
+    </td>
+  </tr>
+</table>
