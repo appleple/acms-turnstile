@@ -1,9 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Acms\Plugins\Turnstile;
 
-use AcmsLogger;
-use Http;
+use ACMS_POST;
+use ACMS_POST_Form_Submit;
+use Acms\Plugins\Turnstile\Services\Hostname;
+use Acms\Plugins\Turnstile\Services\Settings;
+use Acms\Plugins\Turnstile\Services\Verifier;
+use Acms\Plugins\Turnstile\Services\VerifyResult;
+use Acms\Services\Facades\Http;
+use Acms\Services\Facades\Logger;
+use Throwable;
 
 class Hook
 {
@@ -23,31 +32,29 @@ class Hook
      * フォームの送信（ACMS_POST_Form_Submit）だけを検証する。トークンは1回しか使えないため、確認（Confirm）では検証しない。
      * Why not 検証オプション（入力チェック）: 確認と送信の2回走るため、2回目が使用済みで失敗する。
      *
-     * @param \ACMS_POST $thisModule
-     * @return void
+     * @param ACMS_POST $thisModule
      */
-    public function beforePostFire($thisModule)
+    public function beforePostFire($thisModule): void
     {
-        if (!($thisModule instanceof \ACMS_POST_Form_Submit)) {
+        if (!($thisModule instanceof ACMS_POST_Form_Submit)) {
             return;
         }
 
         try {
             $formId = $thisModule->Post->get('id');
             $info = $thisModule->loadForm($formId);
-            if (empty($info)) {
+            if (!is_array($info)) {
                 return; // 存在しないフォーム ID は本体が拒否する
             }
-            $mail = $info['data']->getChild('mail');
-            if ($mail->get(self::FORM_ENABLE_KEY) !== 'on') {
+            if ($info['data']->getChild('mail')->get(self::FORM_ENABLE_KEY) !== 'on') {
                 return;
             }
             $result = $this->verify($thisModule->Post->get(self::TOKEN_FIELD));
             $this->log($result, $formId);
-            $valid = $result->isSuccess();
-        } catch (\Throwable $e) {
+            $valid = $result->success;
+        } catch (Throwable $e) {
             // Hook の例外は本体が受け止めないため外へ投げない。検証できなかった送信は通さない
-            AcmsLogger::warning('Turnstile: 検証中に例外が起きたため、フォームの送信を拒否しました', [
+            Logger::warning('Turnstile: 検証中に例外が起きたため、フォームの送信を拒否しました', [
                 'message' => $e->getMessage(),
             ]);
             $valid = false;
@@ -59,19 +66,20 @@ class Hook
         }
     }
 
-    /**
-     * @param mixed $token
-     * @return VerifyResult
-     */
-    private function verify($token)
+    private function verify(mixed $token): VerifyResult
     {
-        $settings = Settings::load();
-        $hostnames = $settings->hostnames();
-        if (count($hostnames) === 0) {
-            $hostnames = [$this->requestHostname()];
+        $settings = Settings::load(BID);
+        $hostnames = $settings->hostnames;
+        if ($hostnames === []) {
+            $hostnames = [Hostname::fromHostHeader($this->requestHost())];
         }
-        $verifier = new Verifier($settings->secretKey(), $hostnames, function ($url, array $params) {
-            return Http::init($url, 'post')->setPostData(http_build_query($params, '', '&'))->send()->getResponseBody();
+        $verifier = new Verifier($settings->secretKey, $hostnames, static function (string $url, array $params): string {
+            // Why not メソッドチェーン: Http ファサードの型宣言では setPostData() / send() の戻り値が自身と保証されていない
+            $http = Http::init($url, 'post');
+            $http->setPostData($params);
+            $http->send();
+
+            return $http->getResponseBody();
         });
 
         return $verifier->verify($token, $this->remoteAddr());
@@ -82,62 +90,41 @@ class Hook
      *
      * 訪問者が起こせる失敗（トークン無し・使用済み・偽造）は notice、サイト側で直すべき失敗は warning にする。
      * シークレットキーはログに入れない（トークンは本体が POST の値として記録するが、1回限りで期限も短い）。
-     *
-     * @param VerifyResult $result
-     * @param mixed $formId
-     * @return void
      */
-    private function log(VerifyResult $result, $formId)
+    private function log(VerifyResult $result, mixed $formId): void
     {
-        if ($result->isSuccess()) {
+        if ($result->success) {
             return;
         }
         $context = [
             'formId' => $formId,
-            'reason' => $result->reason(),
+            'reason' => $result->reason?->value,
             // Why not errorCodes: 監査ログは キー名に code・token などを含む値を伏せ字にするため、調査に要るこの値が消える
-            'siteverifyErrors' => $result->errorCodes(),
-            'hostname' => $result->hostname(),
+            'siteverifyErrors' => $result->errorCodes,
+            'hostname' => $result->hostname,
         ];
         if ($result->isSiteProblem()) {
-            AcmsLogger::warning('Turnstile: 設定または通信の問題でトークンを検証できず、フォームの送信を拒否しました', $context);
+            Logger::warning('Turnstile: 設定または通信の問題でトークンを検証できず、フォームの送信を拒否しました', $context);
+
             return;
         }
-        AcmsLogger::notice('Turnstile: トークンの検証に失敗したため、フォームの送信を拒否しました', $context);
+        Logger::notice('Turnstile: トークンの検証に失敗したため、フォームの送信を拒否しました', $context);
     }
 
     /**
      * 訪問者の IP アドレス
      *
      * 本体の REMOTE_ADDR 定数は TRUSTED_PROXY_LIST を設定すると、Cloudflare などのプロキシ越しでも訪問者の IP になる
-     *
-     * @return string
      */
-    private function remoteAddr()
+    private function remoteAddr(): string
     {
-        if (defined('REMOTE_ADDR')) {
-            return (string) REMOTE_ADDR;
-        }
-        return isset($_SERVER['REMOTE_ADDR']) ? (string) $_SERVER['REMOTE_ADDR'] : '';
+        return defined('REMOTE_ADDR') ? REMOTE_ADDR : '';
     }
 
-    /**
-     * リクエストのホスト名（ポートを除く）
-     *
-     * @return string
-     */
-    private function requestHostname()
+    private function requestHost(): string
     {
-        if (defined('HTTP_HOST')) {
-            $host = (string) HTTP_HOST;
-        } else {
-            $host = isset($_SERVER['HTTP_HOST']) ? (string) $_SERVER['HTTP_HOST'] : '';
-        }
-        $host = strtolower($host);
-        // [::1]:8080 のような IPv6 と、host:port の両方からポートを外す
-        if (preg_match('/^(\[[^\]]+\]|[^:]+)(?::\d+)?$/', $host, $matches)) {
-            return $matches[1];
-        }
-        return $host;
+        $host = defined('HTTP_HOST') ? HTTP_HOST : '';
+
+        return is_string($host) ? $host : '';
     }
 }

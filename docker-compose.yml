@@ -1,0 +1,38 @@
+# 拡張アプリの開発・テスト用の環境（a-blog cms 本体入りの appleple/acms イメージ + MySQL）
+# src/ を extension/plugins/Turnstile にマウントし、リポジトリ全体を /workspace にマウントする。
+# 本番には使わない。
+services:
+  acms:
+    image: appleple/acms:${ACMS_IMAGE_TAG:-3.2-php8.5}
+    ports:
+      - '${ACMS_HTTP_PORT:-8080}:80'
+    environment:
+      ACMS_DB_HOST: db
+      ACMS_DB_NAME: acms
+      ACMS_DB_USER: acms
+      ACMS_DB_PASS: acms
+    volumes:
+      # src/ が拡張アプリ本体（配布する zip の中身）
+      - ./src:/var/www/html/extension/plugins/Turnstile
+      # composer・テストはリポジトリ全体をマウントした /workspace で実行する
+      - .:/workspace
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: acms
+      MYSQL_USER: acms
+      MYSQL_PASSWORD: acms
+      MYSQL_ROOT_PASSWORD: root
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-uroot', '-proot']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - db-data:/var/lib/mysql
+
+volumes:
+  db-data:

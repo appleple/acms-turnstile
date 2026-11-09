@@ -4,7 +4,11 @@ a-blog cms の拡張アプリ「Turnstile for a-blog cms」を使うと、Cloudf
 
 使い方は [reCAPTCHA for a-blog cms](https://github.com/appleple/acms-recaptcha) とそろえています。拡張アプリの設定にキーを保存し、フォームIDごとに連携を有効にして、送信ボタンのある form 要素にウィジェットを置きます。
 
-Ver. 3.2.39 で動作を確認しています。Twig テンプレート用のモジュール（`V2_Turnstile`）は Ver. 3.2.27 以降で使えます。
+## 動作環境
+
+- a-blog cms: Ver. 3.2.0 以降（動作確認は Ver. 3.2.39）。Twig テンプレート用のモジュール（`V2_Turnstile`）は Ver. 3.2.27 以降
+- PHP: 8.1〜8.5
+- `config.server.php` で `HOOK_ENABLE` が `1` であること
 
 ## 仕組み
 
@@ -15,15 +19,17 @@ Ver. 3.2.39 で動作を確認しています。Twig テンプレート用のモ
 
 ## ダウンロード
 
-[Turnstile for a-blog cms](./build/turnstile.zip)
+[Releases](https://github.com/appleple/acms-turnstile/releases/latest) から `Turnstile.zip` をダウンロードします。
 
-ダウンロード後に解凍し、**extension/plugins** に設置してください。
+解凍して **extension/plugins** に設置してください。
 
 * extension/plugins/Turnstile
 
 ## インストール
 
 管理ページ > 拡張アプリ の「拡張アプリ管理」で Turnstile をインストールし、使うブログで有効にします。
+
+アンインストールすると、設定ページで保存した値（コンフィグの `turnstile_` で始まるキー）を全ブログから消します。フォームIDの「Turnstile連携」の値はフォームの設定に残りますが、拡張アプリが無ければ使われません。
 
 拡張アプリの処理は Hook で動くため、`config.server.php` で HOOK を有効にしておく必要があります。
 
@@ -135,13 +141,9 @@ Cloudflare は動作確認用のキーを公開しています（[Testing](https
 
 動作確認用のシークレットキーで検証すると、応答の `hostname` は `example.com` になります。手元で確かめるときは「許可するホスト名」に `example.com` を足し、終わったら消してください。本番のキーに戻すのも忘れないでください。
 
-## ビルド
+## 開発
 
-```sh
-npm run build
-```
-
-`package.json` の `version` を `ServiceProvider.php` に反映し、`build/turnstile.zip` を作ります。git の commit・push はしません。
+開発環境・テスト・リリースの手順は [DEVELOPMENT.md](./DEVELOPMENT.md) を読んでください。
 
 ## ライセンス
 

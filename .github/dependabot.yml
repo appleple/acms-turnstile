@@ -1,0 +1,18 @@
+# ワークフローで使う GitHub Actions を週1回更新する。パッチ・マイナーの更新は
+# .github/workflows/dependabot-auto-merge.yml が CI の通過後に自動でマージし、メジャーは人が確かめる。
+#
+# Composer（開発用の依存）は対象にしない。ablogcms/testing-framework は a-blog cms のマイナーに
+# 合わせて人が上げるもので、ほかは開発用の道具だけのため。
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"

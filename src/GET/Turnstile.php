@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Acms\Plugins\Turnstile\GET;
 
 use ACMS_Corrector;
 use ACMS_GET;
-use Acms\Plugins\Turnstile\Settings;
+use Acms\Plugins\Turnstile\Services\Settings;
 use Template;
 
 /**
@@ -17,8 +19,9 @@ class Turnstile extends ACMS_GET
     {
         $tpl = new Template($this->tpl, new ACMS_Corrector());
         $tpl->add(null, [
-            'sitekey' => Settings::load()->siteKey(),
+            'sitekey' => Settings::load(BID)->siteKey,
         ]);
+
         return $tpl->get();
     }
 }
