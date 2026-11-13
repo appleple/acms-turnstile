@@ -4,9 +4,8 @@
  * .js-acms-turnstile の要素に Turnstile のウィジェットを描き、トークンが取れるまで同じ form の送信ボタンを押せなくする。
  * トークンが無いまま送ると送信が拒否されて最初からやり直しになるため、押せる時点をトークンの取得後に合わせる。
  *
- * 読み込み方（この順で書く。api.js より先にこのファイルを読み込む）:
- * <script src="/extension/plugins/Turnstile/assets/turnstile.js"></script>
- * <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=acmsTurnstileOnload" async defer></script>
+ * Turnstile モジュール（Services/Scripts.php）が、このファイルと Cloudflare の api.js を本体の Asset API で </body> の直前に出力する。
+ * api.js の onload で acmsTurnstileOnload を呼ぶため、このファイルを先に読み込む。
  */
 (function () {
   'use strict';

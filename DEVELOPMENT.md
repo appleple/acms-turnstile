@@ -13,6 +13,7 @@ Turnstile for a-blog cms の開発・テスト・リリースの手順です。�
 │   │   ├── Verifier.php      # siteverify の呼び出しと応答の判定（通信は引数の関数に任せる）
 │   │   ├── VerifyResult.php  # 検証結果
 │   │   ├── FailureReason.php # 失敗の理由（監査ログに残す値）
+│   │   ├── Scripts.php       # ウィジェットのスクリプトを本体の Asset API に登録する
 │   │   ├── Settings.php      # 設定ページ・.env から設定を読む
 │   │   └── Hostname.php      # ホスト名の整形
 │   ├── GET/Turnstile.php     # 標準テンプレート用のモジュール（{sitekey}）

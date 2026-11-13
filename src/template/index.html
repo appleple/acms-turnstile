@@ -85,13 +85,12 @@
 &lt;form action="thanks.html" method="post" enctype="multipart/form-data"&gt;
   ...
   &lt;!-- BEGIN_MODULE Turnstile --&gt;
-  &lt;div class="js-acms-turnstile" data-sitekey="{sitekey}"&gt;&lt;/div&gt;
+  &lt;div class="js-acms-turnstile" data-sitekey="&#123;sitekey&#125;"&gt;&lt;/div&gt;
   &lt;!-- END_MODULE Turnstile --&gt;
   &lt;input type="submit" name="ACMS_POST_Form_Submit" value="送信する"/&gt;
 &lt;/form&gt;
-&lt;script src="%{ROOT_DIR}extension/plugins/Turnstile/assets/turnstile.js"&gt;&lt;/script&gt;
-&lt;script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&amp;onload=acmsTurnstileOnload" async defer&gt;&lt;/script&gt;
       </pre>
+      <p>ウィジェットに要るスクリプト（turnstile.js と Cloudflare の api.js）は、Turnstile モジュールが &lt;/body&gt; の直前に出力します。テンプレートに &lt;script&gt; を書く必要はありません（Ver. 1.0.0 で書いたものは削除してください）。</p>
     </td>
   </tr>
   <tr>

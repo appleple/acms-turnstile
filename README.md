@@ -6,7 +6,7 @@ a-blog cms の拡張アプリ「Turnstile for a-blog cms」を使うと、Cloudf
 
 ## 動作環境
 
-- a-blog cms: Ver. 3.2.0 以降（動作確認は Ver. 3.2.39）。Twig テンプレート用のモジュール（`V2_Turnstile`）は Ver. 3.2.27 以降
+- a-blog cms: Ver. 3.2.29 以降（動作確認は Ver. 3.2.39）
 - PHP: 8.1〜8.5
 - `config.server.php` で `HOOK_ENABLE` が `1` であること
 
@@ -85,20 +85,19 @@ TURNSTILE_SECRET_KEY=0x4AAAAAAA...
 </form>
 ```
 
-次の2つのスクリプトを、この順でページに読み込みます（`</body>` の直前など）。同梱の `turnstile.js` が先、Cloudflare の `api.js` が後です。
+ウィジェットに要るスクリプト（同梱の `turnstile.js` と Cloudflare の `api.js`）は、Turnstile モジュールが本体の Asset API で `</body>` の直前に出力します。テンプレートに `<script>` を書く必要はありません。
 
-```html
-<script src="%{ROOT_DIR}extension/plugins/Turnstile/assets/turnstile.js"></script>
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=acmsTurnstileOnload" async defer></script>
-```
+- `turnstile.js` の URL には、本体の CSS・JavaScript と同じキャッシュ対策（`?date=<更新日時>`。コンフィグの `cache_busting_type` に従う）が付きます。拡張アプリを更新すると URL が変わるため、ブラウザや CDN に古いファイルが残りません。ページそのものをキャッシュしている場合（ページキャッシュや CDN の HTML キャッシュ）は、そのキャッシュを消すまで古い URL が返ります。
+- スクリプトは、テンプレートに Turnstile モジュールがあるページに出力します（確認画面のブロックの中に書いた場合も、入力画面や完了画面に出ます。ウィジェットの無いページでは何もしません）。モジュールを何度書いても1回だけ出力します。
+
+Ver. 1.0.0 からの更新: テンプレートに書いた `turnstile.js` と `api.js` の `<script>` は削除してください。残すと同じスクリプトを2回読み込みます。
 
 `turnstile.js` は `.js-acms-turnstile` の要素にウィジェットを描き、トークンが取れるまで同じ form 要素の送信ボタン（`name="ACMS_POST_Form_Submit"`）を押せなくします。トークンが無いまま送ると拒否されて最初からやり直しになるためです。
 
 - 押せなくするボタンは `data-submit-selector` で変えられます（例 `data-submit-selector=".js-submit"`）。
 - `data-theme`（`auto` / `light` / `dark`）・`data-size`（`normal` / `flexible` / `compact`）・`data-language`・`data-appearance` で、ウィジェットの見た目を指定できます。
-- Cloudflare は `api.js` を自分のサーバーに置いたりキャッシュしたりせず、上の URL から読み込むよう求めています。
 
-`turnstile.js` を使わず、Cloudflare の標準の書き方（`<div class="cf-turnstile" data-sitekey="{sitekey}"></div>` と `api.js` の読み込み）でも動きます。その場合、トークンが取れる前に送信ボタンを押せてしまいます。
+Turnstile モジュールを使わず、Cloudflare の標準の書き方（`<div class="cf-turnstile" data-sitekey="サイトキー"></div>` と `api.js` の読み込み）でも検証は動きます。その場合、トークンが取れる前に送信ボタンを押せてしまいます。
 
 ### ウィジェットの設置（Twig テンプレート）
 
@@ -107,7 +106,7 @@ TURNSTILE_SECRET_KEY=0x4AAAAAAA...
 <div class="js-acms-turnstile" data-sitekey="{{ turnstile.sitekey }}"></div>
 ```
 
-スクリプトの読み込みは標準テンプレートと同じです。
+スクリプトは標準テンプレートと同じく、モジュールが `</body>` の直前に出力します。
 
 ### エラー表示
 

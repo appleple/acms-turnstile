@@ -15,9 +15,9 @@ use SQL;
 class ServiceProvider extends ACMS_App
 {
     /**
-     * 動作する a-blog cms の最小バージョン
+     * 動作する a-blog cms の最小バージョン（ウィジェットのスクリプトの出力に Asset API を使うため）
      */
-    private const MIN_ACMS_VERSION = '3.2.0';
+    private const MIN_ACMS_VERSION = '3.2.29';
 
     /**
      * @var string
